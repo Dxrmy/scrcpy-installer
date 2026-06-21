@@ -12,38 +12,6 @@ function Show-CatHeader {
     Write-Host ""
 }
 
-function Invoke-FastDownload {
-    param([string]$Url, [string]$OutFile)
-    
-    try {
-        $request = [System.Net.WebRequest]::Create($Url)
-        $response = $request.GetResponse()
-        $totalLength = $response.ContentLength
-        $responseStream = $response.GetResponseStream()
-        $targetStream = [System.IO.File]::Create($OutFile)
-        $buffer = New-Object byte[] 65536
-        $count = 0
-        $downloaded = 0
-        
-        do {
-            $count = $responseStream.Read($buffer, 0, $buffer.Length)
-            if ($count -gt 0) {
-                $targetStream.Write($buffer, 0, $count)
-                $downloaded += $count
-                if ($totalLength -gt 0) {
-                    $percent = [math]::Round(($downloaded / $totalLength) * 100)
-                    Write-Progress -Activity "Downloading SCRCPY" -Status "$percent% Complete" -PercentComplete $percent -Id 1
-                }
-            }
-        } while ($count -gt 0)
-    } finally {
-        if ($targetStream) { $targetStream.Dispose() }
-        if ($responseStream) { $responseStream.Dispose() }
-        if ($response) { $response.Close() }
-    }
-    Write-Progress -Activity "Downloading SCRCPY" -Completed -Id 1
-}
-
 function Install-Scrcpy {
     $installDir = Join-Path $HOME ".scrcpy"
     
@@ -69,7 +37,7 @@ function Install-Scrcpy {
     New-Item -ItemType Directory -Path $installDir -Force | Out-Null
 
     Write-Host " [*] Downloading SCRCPY from GitHub..." -ForegroundColor Yellow
-    Invoke-FastDownload -Url $url -OutFile $zipPath
+    Invoke-WebRequest -Uri $url -OutFile $zipPath
 
     Write-Host " [*] Extracting files..." -ForegroundColor Yellow
     try { Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue } catch {}
