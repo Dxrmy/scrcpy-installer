@@ -108,7 +108,7 @@ function Uninstall-Scrcpy {
     Write-Host " [*] Removing from system PATH..." -ForegroundColor Yellow
     $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
     if ($userPath) {
-        $newPath = ($userPath -split ';' | Where-Object { $_ -ne $binDir -and $_ -ne "" }) -join ';'
+        $newPath = (($userPath -split ';').Where({ $_ -ne $binDir -and $_ -ne "" })) -join ';'
         [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
     }
 
