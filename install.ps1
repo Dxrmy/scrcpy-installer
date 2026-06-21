@@ -21,9 +21,10 @@ function Invoke-FastDownload {
         $totalLength = $response.ContentLength
         $responseStream = $response.GetResponseStream()
         $targetStream = [System.IO.File]::Create($OutFile)
-        $buffer = New-Object byte[] 65536
+        $buffer = New-Object byte[] 262144
         $count = 0
         $downloaded = 0
+        $lastPercent = -1
         
         do {
             $count = $responseStream.Read($buffer, 0, $buffer.Length)
@@ -31,8 +32,11 @@ function Invoke-FastDownload {
                 $targetStream.Write($buffer, 0, $count)
                 $downloaded += $count
                 if ($totalLength -gt 0) {
-                    $percent = [math]::Round(($downloaded / $totalLength) * 100)
-                    Write-Progress -Activity "Downloading SCRCPY" -Status "$percent% Complete" -PercentComplete $percent -Id 1
+                    $percent = [math]::Floor(($downloaded / $totalLength) * 100)
+                    if ($percent -ne $lastPercent) {
+                        Write-Progress -Activity "Downloading SCRCPY" -Status "$percent% Complete" -PercentComplete $percent -Id 1
+                        $lastPercent = $percent
+                    }
                 }
             }
         } while ($count -gt 0)
