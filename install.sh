@@ -13,24 +13,22 @@ install_scrcpy() {
     if [[ "$OSTYPE" == "darwin"* ]]; then
         echo -e "\e[33m [*] Installing scrcpy via Homebrew...\e[0m"
         brew install scrcpy
-        echo -e "\e[32m [v] Successfully installed SCRCPY!\e[0m"
     else
         echo -e "\e[33m [*] Installing scrcpy via APT...\e[0m"
         sudo apt-get update && sudo apt-get install -y scrcpy
-        echo -e "\e[32m [v] Successfully installed SCRCPY!\e[0m"
     fi
+    echo -e "\e[32m [v] Successfully installed SCRCPY!\e[0m"
 }
 
 uninstall_scrcpy() {
     if [[ "$OSTYPE" == "darwin"* ]]; then
         echo -e "\e[33m [*] Uninstalling scrcpy via Homebrew...\e[0m"
         brew uninstall scrcpy
-        echo -e "\e[32m [v] Successfully uninstalled SCRCPY!\e[0m"
     else
         echo -e "\e[33m [*] Uninstalling scrcpy via APT...\e[0m"
         sudo apt-get remove -y scrcpy
-        echo -e "\e[32m [v] Successfully uninstalled SCRCPY!\e[0m"
     fi
+    echo -e "\e[32m [v] Successfully uninstalled SCRCPY!\e[0m"
 }
 
 echo -e "\e[37m 1. Install SCRCPY\e[0m"
