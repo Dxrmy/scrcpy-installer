@@ -1,19 +1,13 @@
-# Universal scrcpy Installer
+# scrcpy Installer
 
-Automatically downloads and installs the latest `scrcpy` binary on Windows, or natively installs it via package managers on Linux/macOS.
+Here is a quick script to download and install scrcpy.
 
-Works cleanly without needing any complicated setup!
-
-## Installation
-
-### Windows
-Open **PowerShell** and run the following command:
+**Windows:**
 ```powershell
 irm https://raw.githubusercontent.com/Dxrmy/scrcpy-installer/main/install.ps1 | iex
 ```
 
-### macOS & Linux
-Open your **Terminal** and run the following command:
+**macOS & Linux:**
 ```bash
 curl -sL https://raw.githubusercontent.com/Dxrmy/scrcpy-installer/main/install.sh | bash
 ```
