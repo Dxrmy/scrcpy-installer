@@ -50,7 +50,29 @@ function Install-Scrcpy {
 
     Write-Host " [*] Extracting files..." -ForegroundColor Yellow
     try { Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue } catch {}
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $installDir)
+
+    $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+    $resolvedInstallDir = [System.IO.Path]::GetFullPath($installDir)
+    $normalizedInstallDir = $resolvedInstallDir
+    if (-not $normalizedInstallDir.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $normalizedInstallDir += [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    foreach ($entry in $zip.Entries) {
+        $destinationPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($resolvedInstallDir, $entry.FullName))
+        if ($destinationPath.StartsWith($normalizedInstallDir, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $dir = [System.IO.Path]::GetDirectoryName($destinationPath)
+            if (-not (Test-Path $dir)) {
+                New-Item -ItemType Directory -Path $dir -Force | Out-Null
+            }
+            if ($entry.Name -ne "") {
+                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $destinationPath, $true)
+            }
+        } else {
+            Write-Warning "Skipping Zip Slip attempt: $($entry.FullName)"
+        }
+    }
+    $zip.Dispose()
 
     Write-Host " [*] Cleaning up..." -ForegroundColor Yellow
     Remove-Item -Path $zipPath -Force
