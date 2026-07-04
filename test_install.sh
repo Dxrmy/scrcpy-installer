@@ -1,75 +1,71 @@
 #!/bin/bash
 set -e
 
-# Test suite for install.sh
-# Mocks brew, sudo, and apt-get to verify expected commands are called
-
-FAILS=0
-
-trap "rm -f execution.log temp_functions.sh" EXIT
-
-# Mock functions
+# Mock the functions
 brew() {
-    echo "brew $@" >> execution.log
+    echo "MOCK_BREW $@"
 }
-
 sudo() {
-    echo "sudo $@" >> execution.log
+    echo "MOCK_SUDO $@"
 }
 
-apt-get() {
-    echo "apt-get $@" >> execution.log
+# Mock read to bypass interactive prompt during source
+read() {
+    choice="3"
 }
 
 export -f brew
 export -f sudo
-export -f apt-get
+export -f read
 
-# Safe way to source the script without running its interactive part
-# We extract just the functions to a temporary file
-awk '/^[a-zA-Z_]+\(\) \{/ {in_func=1} in_func {print} /^\}/ {in_func=0; print ""}' install.sh > temp_functions.sh
-source ./temp_functions.sh
+source install.sh > /dev/null
 
-test_install_scrcpy_darwin() {
-    echo "Running test_install_scrcpy_darwin..."
-    rm -f execution.log
-    touch execution.log
-    export OSTYPE="darwin20.0"
+fails=0
 
-    install_scrcpy > /dev/null
-
-    if grep -q "brew install scrcpy" execution.log; then
-        echo "  [PASS] brew was called to install scrcpy"
-    else
-        echo "  [FAIL] brew was not called"
-        FAILS=$((FAILS+1))
-    fi
-}
-
-test_install_scrcpy_linux() {
-    echo "Running test_install_scrcpy_linux..."
-    rm -f execution.log
-    touch execution.log
-    export OSTYPE="linux-gnu"
-
-    install_scrcpy > /dev/null
-
-    if grep -q "sudo apt-get update" execution.log && grep -q "sudo apt-get install -y scrcpy" execution.log; then
-        echo "  [PASS] apt-get was called to install scrcpy"
-    else
-        echo "  [FAIL] apt-get was not called"
-        FAILS=$((FAILS+1))
-    fi
-}
-
-# Run tests
-test_install_scrcpy_darwin
-test_install_scrcpy_linux
-
-# Report results
-if [ $FAILS -eq 0 ]; then
-    echo "All tests passed!"
+# Test install_scrcpy darwin
+OSTYPE="darwin19"
+output=$(install_scrcpy)
+if [[ "$output" == *"MOCK_BREW install scrcpy"* ]]; then
+    echo "Pass: install_scrcpy darwin"
 else
-    echo "$FAILS tests failed."
+    echo "Fail: install_scrcpy darwin"
+    echo "Output: $output"
+    fails=1
 fi
-if [ $FAILS -eq 0 ]; then exit 0; else exit 1; fi
+
+# Test install_scrcpy linux
+OSTYPE="linux-gnu"
+output=$(install_scrcpy)
+if [[ "$output" == *"MOCK_SUDO apt-get update"* && "$output" == *"MOCK_SUDO apt-get install -y scrcpy"* ]]; then
+    echo "Pass: install_scrcpy linux"
+else
+    echo "Fail: install_scrcpy linux"
+    echo "Output: $output"
+    fails=1
+fi
+
+# Test uninstall_scrcpy darwin
+OSTYPE="darwin19"
+output=$(uninstall_scrcpy)
+if [[ "$output" == *"MOCK_BREW uninstall scrcpy"* ]]; then
+    echo "Pass: uninstall_scrcpy darwin"
+else
+    echo "Fail: uninstall_scrcpy darwin"
+    echo "Output: $output"
+    fails=1
+fi
+
+# Test uninstall_scrcpy linux
+OSTYPE="linux-gnu"
+output=$(uninstall_scrcpy)
+if [[ "$output" == *"MOCK_SUDO apt-get remove -y scrcpy"* ]]; then
+    echo "Pass: uninstall_scrcpy linux"
+else
+    echo "Fail: uninstall_scrcpy linux"
+    echo "Output: $output"
+    fails=1
+fi
+
+if [ $fails -ne 0 ]; then
+    exit 1
+fi
