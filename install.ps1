@@ -12,6 +12,48 @@ function Show-CatHeader {
     Write-Host ""
 }
 
+function Invoke-FastDownload {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Uri,
+        [Parameter(Mandatory=$true)]
+        [string]$OutFile
+    )
+    
+    try {
+        $request = [System.Net.WebRequest]::Create($Uri)
+        $response = $request.GetResponse()
+        $totalLength = $response.ContentLength
+        $responseStream = $response.GetResponseStream()
+        $targetStream = [System.IO.File]::Create($OutFile)
+        $buffer = New-Object byte[] 262144
+        $count = 0
+        $downloaded = 0
+        $lastPercent = -1
+        
+        do {
+            $count = $responseStream.Read($buffer, 0, $buffer.Length)
+            if ($count -gt 0) {
+                $targetStream.Write($buffer, 0, $count)
+                $downloaded += $count
+                if ($totalLength -gt 0) {
+                    $percent = [math]::Floor(($downloaded / $totalLength) * 100)
+                    if ($percent -ne $lastPercent) {
+                        Write-Progress -Activity "Downloading SCRCPY" -Status "$percent% Complete" -PercentComplete $percent -Id 1
+                        $lastPercent = $percent
+                    }
+                }
+            }
+        } while ($count -gt 0)
+        
+        Write-Progress -Activity "Downloading SCRCPY" -Completed -Id 1
+    } finally {
+        if ($targetStream) { $targetStream.Dispose() }
+        if ($responseStream) { $responseStream.Dispose() }
+        if ($response) { $response.Dispose() }
+    }
+}
+
 function Install-Scrcpy {
     $installDir = Join-Path $HOME ".scrcpy"
     
@@ -38,7 +80,7 @@ function Install-Scrcpy {
     New-Item -ItemType Directory -Path $installDir -Force | Out-Null
 
     Write-Host " [*] Downloading SCRCPY from GitHub..." -ForegroundColor Yellow
-    Invoke-WebRequest -Uri $url -OutFile $zipPath
+    Invoke-FastDownload -Uri $url -OutFile $zipPath
 
     Write-Host " [*] Verifying file integrity..." -ForegroundColor Yellow
     $actualHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
