@@ -27,6 +27,7 @@ function Install-Scrcpy {
         return
     } else {
         $url = "https://github.com/Genymobile/scrcpy/releases/download/v2.4/scrcpy-win64-v2.4.zip"
+        $expectedHash = "9dc56f21bfa455352ec0c58b40feaf2fb02d67372910a4235e298ece286ff3a9"
         $binDir = Join-Path $installDir "scrcpy-win64-v2.4"
     }
     
@@ -38,6 +39,14 @@ function Install-Scrcpy {
 
     Write-Host " [*] Downloading SCRCPY from GitHub..." -ForegroundColor Yellow
     Invoke-WebRequest -Uri $url -OutFile $zipPath
+
+    Write-Host " [*] Verifying file integrity..." -ForegroundColor Yellow
+    $actualHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
+    if ($actualHash -ne $expectedHash) {
+        Write-Host " [x] Error: Checksum verification failed!" -ForegroundColor Red
+        Remove-Item -Path $zipPath -Force
+        exit 1
+    }
 
     Write-Host " [*] Extracting files..." -ForegroundColor Yellow
     try { Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue } catch {}
